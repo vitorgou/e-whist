@@ -14,6 +14,7 @@ class Round:
         self.cards_played = []
         self.current_trick = []
         self.round_number = 1  # Track round number
+        self.lead_index = 0
 
     def choose_trump_suit(self) -> str:
         """Choose a random trump suit for this round."""
@@ -23,63 +24,62 @@ class Round:
         """Simulate a simple bidding phase. For now, all players bid 1."""
         print(f"Trump suit for round {self.round_number}: {self.trump_suit}")
         for player in self.players:
-            player.make_bid(max_possible=5)  # Adjust this based on card count
+            if player.is_human:
+                print(f"\n{player.name}, your hand:")
+                for i, card in enumerate(player.hand):
+                    print(f"{i}: {card}")
+            player.make_bid(max_possible=len(player.hand))  # Adjust this based on card count
             print(f"{player.name} bids {player.bid}")
 
     def start_tricks(self):
-        """Start the trick phase of the round."""
+        """Start the trick-taking phase of the round."""
         for trick_number in range(len(self.players[0].hand)):
             print(f"\nTrick {trick_number + 1} begins...")
-            self.play_trick()
+            self.play_trick(self.lead_index)
+            self.lead_index = (self.lead_index + 1) % len(self.players)
 
-    def play_trick(self):
-        """Each player plays one card for the trick."""
+    def play_trick(self, lead_player_index: int):
+        """Each player plays one card for the trick in correct order starting from lead_player_index."""
         self.current_trick = []
-        lead_suit = None  # Keep track of the lead suit
+        lead_suit = None
+        num_players = len(self.players)
+        trick_order = []
 
-        for i, player in enumerate(self.players):
+        for i in range(num_players):
+            player_index = (lead_player_index + i) % num_players
+            trick_order.append(self.players[player_index])
+
+        for i, player in enumerate(trick_order):
             played_card = None
 
             while played_card is None:
-                # Ask the player to play a card
-                played_card = player.play_card(lead_suit)
+                played_card = player.play_card(
+                    lead_suit=lead_suit,
+                    validate_fn=self.validate_card_play
+                )
 
-                # If it's not the first card, validate the card
-                if lead_suit is not None:
-                    try:
-                        self.validate_card_play(player, played_card, lead_suit)
-                    except ValueError as e:
-                        print(e)  # Display the error message if a player violates the rules
-                        played_card = None  # Reset played card to allow retry
-                        continue  # Let the player retry playing a valid card
+                if i == 0:
+                    lead_suit = played_card.suit
 
-                # Set the lead suit if it's the first player
-                elif i == 0:
-                    lead_suit = played_card.suit  # First card determines the lead suit
-                # If valid, append the card to the trick
                 self.current_trick.append(played_card)
                 print(f"{player.name} plays {played_card}")
 
-
-        self.determine_winner_of_trick()
-
+        self.determine_winner_of_trick(trick_order)
 
 
-
-
-    def determine_winner_of_trick(self):
-        """Determine the winner of the trick based on trump and the lead suit."""
+    def determine_winner_of_trick(self, trick_order: list):
+        """Determine winner based on trick order and trump."""
         winning_card = self.current_trick[0]
-        winning_player = self.players[0]
+        winning_player = trick_order[0]
 
-        # Simple logic: highest card wins (trump suit > others, same suit wins by rank)
         for i, card in enumerate(self.current_trick[1:], start=1):
             if self.is_card_winner(card, winning_card):
                 winning_card = card
-                winning_player = self.players[i]
+                winning_player = trick_order[i]
 
         print(f"{winning_player.name} wins the trick with {winning_card} \n")
         winning_player.tricks_won += 1
+
 
     def is_card_winner(self, card, current_winner_card):
         """Check if the card is a winner based on the trump suit and ranks."""
