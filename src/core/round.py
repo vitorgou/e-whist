@@ -23,7 +23,9 @@ class Round:
     def start_bidding(self):
         """Simulate a simple bidding phase. For now, all players bid 1."""
         print(f"Trump suit for round {self.round_number}: {self.trump_suit}")
+
         for player in self.players:
+            player.trump_suit = self.trump_suit
             if player.is_human:
                 print(f"\n{player.name}, your hand:")
                 for i, card in enumerate(player.hand):
