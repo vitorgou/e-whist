@@ -9,19 +9,36 @@ class Game:
         self.hand_sizes = [3, 5, 7, 9, 11, 13, 11, 9, 7, 5, 3]
         self.scores = {player.name: 0 for player in players}
         self.rounds = []
+        self.starting_lead_player_index = 0  # First round: Player 0 leads
+
+    def play(self):
+        """Play the game for a fixed number of rounds."""
+        for round_number in range(1, 12):  # 11 rounds
+            # Rotate who leads
+            leading_player = self.players[self.starting_lead_player_index % len(self.players)]
+
+            round_instance = Round(self.players, round_number, leading_player)
+            round_instance.play_round()
+
+            # After each round, next player leads
+            self.starting_lead_player_index += 1
 
     def start(self):
         """Start the game and manage the rounds."""
         for round_number, hand_size in enumerate(self.hand_sizes, start=1):
             print(f"\n=== Round {round_number} | Hand size: {hand_size} ===")
             self.prepare_round(hand_size)
-            round_instance = Round(self.players)
-            round_instance.round_number = round_number
-            round_instance.start_bidding()
-            round_instance.start_tricks()
-            round_instance.score_round()
+
+            starting_lead_player = self.players[self.starting_lead_player_index % len(self.players)]
+            round_instance = Round(self.players, round_number, starting_lead_player)
+            round_instance.hand_size = hand_size  # Optional if Round needs it
+
+            # Instead of three method calls, just one
+            round_instance.play_round()
+
             self.update_scores()
             self.rounds.append(round_instance)
+            self.starting_lead_player_index += 1
 
         print("\n🎉 Game Over! Final Scores:")
         self.display_final_scores()
