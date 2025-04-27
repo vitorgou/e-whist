@@ -7,14 +7,26 @@ from .deck import Deck
 
 class Round:
     """Round class for managing the game round, including bidding and tricks."""
-    def __init__(self, players: list):
+    def __init__(self, players: list[Player], round_number, starting_lead_player: Player):
         self.players = players
+        self.round_number = round_number
+        self.starting_player = starting_lead_player
+        self.starting_lead_player_index = self.players.index(starting_lead_player)
         self.deck = Deck()
         self.trump_suit = self.choose_trump_suit()
         self.cards_played = []
         self.current_trick = []
         self.round_number = 1  # Track round number
         self.lead_index = 0
+    
+    def play_round(self):
+        """Full round flow: bidding, tricks, and scoring."""
+        print(f"\n=== Round {self.round_number} begins ===")
+        print(f"Trump suit is: {self.trump_suit}\n")
+
+        self.start_bidding()
+        self.start_tricks()
+        self.score_round()
 
     def choose_trump_suit(self) -> str:
         """Choose a random trump suit for this round."""
@@ -34,23 +46,34 @@ class Round:
             print(f"{player.name} bids {player.bid}")
 
     def start_tricks(self):
-        """Start the trick-taking phase of the round."""
+        """Start the trick phase of the round."""
+        num_players = len(self.players)
+
         for trick_number in range(len(self.players[0].hand)):
             print(f"\nTrick {trick_number + 1} begins...")
-            self.play_trick(self.lead_index)
-            self.lead_index = (self.lead_index + 1) % len(self.players)
 
-    def play_trick(self, lead_player_index: int):
-        """Each player plays one card for the trick in correct order starting from lead_player_index."""
+            # Now we can correctly calculate
+            lead_player_index = (self.starting_lead_player_index + trick_number) % num_players
+            lead_player = self.players[lead_player_index]
+
+            self.play_trick(lead_player)
+
+    def play_trick(self, lead_player: Player):
+        """Each player plays one card for the trick, starting from lead_player."""
         self.current_trick = []
         lead_suit = None
         num_players = len(self.players)
         trick_order = []
 
+        # Find the index of the leading player
+        lead_player_index = self.players.index(lead_player)
+
+        # Build the trick order starting from the leading player
         for i in range(num_players):
             player_index = (lead_player_index + i) % num_players
             trick_order.append(self.players[player_index])
 
+        # Now players play cards in correct order
         for i, player in enumerate(trick_order):
             played_card = None
 

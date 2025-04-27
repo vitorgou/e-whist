@@ -79,6 +79,12 @@ class Player:
                     chosen_card = self.hand[choice - 1]
 
                     # Validate the card choice using game's rule
+                                   
+                    if lead_suit is None:
+                        if (chosen_card.suit == self.trump_suit and 
+                            any(card.suit != self.trump_suit for card in self.hand)):
+                            print("You cannot lead with a trump suit unless all your cards are trump! Try again!\n")
+                            continue
                     if validate_fn:
                         try:
                             validate_fn(self, chosen_card, lead_suit)
